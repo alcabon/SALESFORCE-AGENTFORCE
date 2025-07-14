@@ -2,11 +2,12 @@
 
 ---
 
-Excellente observation ! 
 🎯 Ce fichier `paste.txt` contient effectivement des **données hexadécimales encodées** - c'est du **MessagePack ou un format binaire similaire**.
+
 🎯 **Excellent !** Nous avons maintenant décodé le schéma de **chunking de Salesforce** ! 
 
 Voici ce que révèle cette analyse :
+
 **🎯 Découverte majeure !** Ce fichier révèle l'**architecture de chunking interne de Salesforce** :
 
 ## **Key Findings** 🔥
