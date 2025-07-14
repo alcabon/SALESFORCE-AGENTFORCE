@@ -455,8 +455,4 @@ flowchart TD
 ```
 
 Cette architecture sophistiquée permet à Salesforce de gérer des téraoctets de données avec des performances sub-secondes ! 🚀
-    style P fill:#ff9800,color:#fff
-    style T fill:#9c27b0,color:#fff
-```
-
-Cette architecture sophistiquée permet à Salesforce de gérer des téraoctets de données avec des performances sub-secondes ! 🚀
+ 
