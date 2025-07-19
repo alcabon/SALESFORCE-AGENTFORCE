@@ -1,4 +1,23 @@
+### Quick English Glossary:  
+- **Semantic search** = the *process* that understands meaning/intent and produces relevance scores.  
+- **Top-K snippets** or **Top-K chunks** = the *result* of that process: the **K highest-scoring passages** that are actually inserted into the LLM’s context window.
 
+---
+
+### What “Semantic search → Top-K chunks” means
+1. **Semantic search**  
+   - Uses NLP (transformers like BERT or GPT) to convert both the **user query** and every **document chunk** into vectors.  
+   - Computes **cosine similarity** (or another distance) to rank chunks by **meaning**, not keywords .
+
+2. **Top-K chunks / Top-K snippets**  
+   - After ranking, the system picks the **K best-scoring passages** (where K might be fixed—e.g. 5—or dynamically tuned ).  
+   - These **K passages** (plain text) are concatenated and fed to the LLM as additional context.  
+   - They are often called **snippets** when they come from live web search, and **chunks** when they come from a pre-segmented document.
+
+---
+
+### Key difference in one sentence  
+> *Semantic search* is the **method** that ranks by meaning; *Top-K chunks/snippets* are the **concrete text blocks** it selects for the LLM.
 
 ```mermaid
 
