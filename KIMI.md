@@ -61,6 +61,8 @@ Cosine distance is simply how “close” two vectors (embeddings) are in direct
 
 So lower cosine distance ⇒ higher semantic relevance ⇒ chunk is chosen as one of the **Top-K**.
 
+---
+
 What the numbers in an embedding vector actually **mean**
 
 1.  **Each position is a “latent feature”**  
@@ -80,3 +82,26 @@ What the numbers in an embedding vector actually **mean**
     •  Only the **whole pattern** (all 384 numbers) captures the semantic content.
 
 Think of the vector as a **compressed “meaning fingerprint”**: useless alone, powerful when compared to others.
+
+---
+
+Common public embedding models already cover a wide spectrum:
+
+-  **384** – `all-MiniLM-L6-v2` (default in most RAG demos)  
+-  **512** – `all-mpnet-base-v2`  
+-  **768** – `all-distilroberta-v1`, `text-embedding-3-small`  
+-  **1024** – `text-embedding-ada-002` (OpenAI)  
+-  **1536** – `text-embedding-3-large` (OpenAI)  
+-  **3072** – `text-embedding-3-large` (larger config)  
+-  **4096** – `gte-large`, `e5-large-v2`  
+
+Research or proprietary systems sometimes go much higher (8 k, 16 k, even 32 k), but the trade-off is memory and latency.
+
+---
+
+Yes, **completely independent**.
+
+• **Embedding dimension** (384, 768, 1536 …) is a **fixed property of the encoder model**.  
+• **Context-window size** (4 k, 8 k, 128 k tokens …) is a **property of the generative LLM**.
+
+The 384-D vector for a 50-token sentence is the same length whether the LLM’s context limit is 4 000 tokens or 1 000 000 tokens.
