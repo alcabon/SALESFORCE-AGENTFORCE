@@ -48,3 +48,35 @@ flowchart TD
     class D2,E3 yellow
     class Z blue
 ```
+
+Cosine distance is simply how “close” two vectors (embeddings) are in direction.
+
+1.  Each chunk and the user query are turned into **embedding vectors**—long lists of numbers.  
+2.  **Cosine similarity** = the cosine of the angle between the two vectors.  
+   • 0° → vectors point the same way → similarity = 1 (perfect match).  
+   • 90° → vectors are orthogonal → similarity = 0 (no match).  
+3.  **Cosine distance** = 1 − cosine similarity.  
+   • 0 means identical direction (very close).  
+   • 1 means opposite direction (very far).
+
+So lower cosine distance ⇒ higher semantic relevance ⇒ chunk is chosen as one of the **Top-K**.
+
+What the numbers in an embedding vector actually **mean**
+
+1.  **Each position is a “latent feature”**  
+    •  A 384-dim vector (MiniLM-L6-v2) has 384 **real numbers** (float32).  
+    •  Position 57 might roughly encode “technicality”, position 123 “legality”, etc., but **there is no human label**; they are learned automatically during training.
+
+2.  **Values are usually small decimals**  
+    •  Typical range: –1 to +1, often around –0.2 … +0.4.  
+    •  They are **unit-normalized** (length=1) so cosine similarity only measures **direction**, not magnitude.
+
+3.  **Together they form a “semantic coordinate”**  
+    •  Sentences with similar meaning end up close in this 384-D space.  
+    •  Changing one word can shift many coordinates slightly, nudging the vector toward a new meaning cluster.
+
+4.  **No single dimension is interpretable**  
+    •  Unlike a database column (“price = 42”), no individual value has standalone meaning.  
+    •  Only the **whole pattern** (all 384 numbers) captures the semantic content.
+
+Think of the vector as a **compressed “meaning fingerprint”**: useless alone, powerful when compared to others.
