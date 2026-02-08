@@ -154,3 +154,88 @@ Il n'y a **pas de RAG propriétaire magique** — et Salesforce le reconnaît im
 La combinaison **Claude Opus/Sonnet + Salesforce DX MCP Server** vous donne exactement le même "context aware" avec un modèle incomparablement plus puissant pour le raisonnement, l'architecture et la qualité du code. Le serveur MCP note d'ailleurs explicitement que ses outils ne sont pas un simple wrapper autour des commandes CLI, mais délivrent des résultats orientés développeur, permettant aux agents de se concentrer sur ce que les développeurs veulent vraiment accomplir.
 
 La seule chose que vous perdez est le **Trust Layer** (masquage PII automatique, zero data retention) — ce qui peut être critique dans certains contextes réglementés, mais n'a rien à voir avec la qualité de génération de code.
+
+---
+
+Excellente question technique. Regardons comment Cline gère réellement l'injection de contexte.Très bonne question de précision. La réponse est nuancée mais importante.
+
+## Non, les fichiers ne sont PAS transformés sémantiquement par Cline
+
+### Comment `read_file` fonctionne réellement
+
+L'outil `read_file` de Cline prend simplement un chemin en paramètre (`<read_file><path>src/main.js</path></read_file>`) et retourne le contenu brut du fichier. C'est du texte pur injecté tel quel dans la fenêtre de contexte.
+
+La preuve la plus flagrante : si Cline lit accidentellement un gros fichier JSON, cela déclenche une erreur HTTP 413 "Prompt is too long" et la tâche est irrécupérable — il faut repartir de zéro. Si Cline faisait un traitement sémantique préalable (résumé, extraction, compression), ce problème n'existerait pas.
+
+Les fichiers de plus de 300KB sont bloqués à la lecture, même avec des modèles à contexte d'1M+ tokens. C'est une limite brute sur la taille du fichier, pas un traitement intelligent.
+
+### Ce que Cline fait réellement (et que Salesforce appelle "context aware")
+
+Il y a **trois niveaux** d'intelligence dans la gestion du contexte, et aucun n'est du RAG ou de l'enrichissement sémantique :
+
+**1. L'agent décide QUELS fichiers lire (intelligence de navigation)**
+
+Cline commence par analyser la structure de fichiers et les ASTs du code source, exécute des recherches regex, et lit les fichiers pertinents pour se mettre à jour sur les projets existants.
+
+C'est le LLM lui-même qui décide, via un outil `list_files` ou `search_files`, quels fichiers ouvrir ensuite. Il ne lit pas tout d'un coup — il navigue de façon agentique. Mais le contenu lu reste **brut**.
+
+**2. Le system prompt fournit le contexte d'environnement**
+
+Avant d'envoyer votre requête au modèle, Cline rassemble des informations sur votre workspace, vos préférences et votre codebase, puis combine le tout dans un message complet qui donne au modèle tout ce dont il a besoin.
+
+Ce contexte inclut : l'OS, le répertoire courant, les fichiers ouverts, les erreurs du linter — mais c'est du texte brut, pas un résumé sémantique des métadonnées.
+
+**3. La gestion de la fenêtre de contexte (troncature, pas enrichissement)**
+
+Le `ContextManager` gère la troncature dynamique de l'historique de conversation et l'optimisation, avec des buffers spécifiques selon le modèle pour ne pas dépasser la limite.
+
+C'est de la **compression par troncature** (on enlève les vieux messages), pas de l'enrichissement sémantique.
+
+### Ce que ça signifie concrètement pour les métadonnées Salesforce XML
+
+Quand Agentforce Vibes (basé sur Cline) "comprend" votre org, voici ce qui se passe vraiment :
+
+```
+1. L'agent demande → list_files force-app/main/default/objects/
+2. Il voit la liste → Account/, Contact/, MyCustomObject__c/...
+3. Il demande → read_file force-app/main/default/objects/MyCustomObject__c/MyCustomObject__c.object-meta.xml
+4. Le XML BRUT est injecté dans le contexte :
+   <?xml version="1.0" encoding="UTF-8"?>
+   <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+       <label>My Custom Object</label>
+       <fields>
+           <fullName>Status__c</fullName>
+           <type>Picklist</type>
+           ...
+       </fields>
+   </CustomObject>
+5. Le LLM interprète ce XML et comprend la structure
+```
+
+**Aucune transformation sémantique n'a lieu entre les étapes 3 et 5.** Le XML est injecté tel quel. C'est la capacité du LLM à comprendre le XML de métadonnées Salesforce qui fait tout le travail.
+
+### Pourquoi c'est un argument massif en faveur de Claude Opus/Sonnet
+
+C'est précisément là que la qualité du modèle devient déterminante :
+
+- Un modèle 7-9B (xGen) qui reçoit un XML de métadonnées Salesforce va en extraire des informations basiques : noms d'objets, types de champs, quelques relations
+- **Claude Opus/Sonnet** qui reçoit le même XML va comprendre les implications architecturales : les lookup vs master-detail, les cascade deletes, les sharing rules implicites, les governor limits liés aux relations, les patterns optimaux pour les bulk triggers sur cet objet
+
+Le fichier injecté est identique. La qualité de *compréhension* est radicalement différente.
+
+### L'exception : le MCP Server ajoute une couche structurée
+
+La seule véritable "amélioration sémantique" vient du **Salesforce DX MCP Server**, qui n'est pas Cline lui-même mais un outil appelé par Cline/Agentforce. Le DX MCP Server n'est pas un simple wrapper autour des commandes CLI — ses outils délivrent des résultats orientés développeur, pas un mapping 1:1 des commandes CLI.
+
+Par exemple, au lieu de lire un XML brut, un outil MCP comme `describe_sobject` peut retourner une réponse structurée et pré-formatée. Mais encore une fois, ce MCP est **exactement le même** qu'il soit utilisé par Agentforce Vibes ou par Claude Code.
+
+### En résumé
+
+| Étape | Ce qui se passe | Enrichissement sémantique ? |
+|---|---|---|
+| Navigation fichiers | L'agent décide quoi lire | ❌ Non (décision du LLM) |
+| Lecture fichier | `read_file` → contenu brut | ❌ Non (injection texte brut) |
+| Appel MCP tool | DX MCP → réponse structurée | ⚠️ Léger (formatage des résultats) |
+| Compréhension | Le LLM interprète le contenu | ✅ **C'est ICI que tout se joue** |
+
+**Conclusion : puisque l'intelligence est dans l'interprétation par le LLM (et non dans un pré-traitement), utiliser un modèle frontier sur le même contenu brut donne des résultats incomparablement supérieurs.** Le "context aware" d'Agentforce Vibes n'est pas une sauce secrète — c'est le même XML lu par un modèle beaucoup moins capable.
