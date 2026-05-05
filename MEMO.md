@@ -305,7 +305,7 @@ Agentforce Action (if needed)
 
 ---
 
-The real insight here is that **Data Cloud is the RAG engine**, and Parquet/Iceberg are the silent foundation making it fast, scalable and interoperable — classic "tiroir" pattern even if the word was wrong! 😄
+The real insight here is that **Data Cloud is the RAG engine**, and Parquet/Iceberg are the silent foundation making it fast, scalable and interoperable.
 
 Want to map out how you'd replicate this full stack outside of Salesforce?
 
