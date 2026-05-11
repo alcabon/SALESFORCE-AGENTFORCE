@@ -1,6 +1,6 @@
 The answer to this requires unpacking a critical conceptual split first — `grant_type` and `client_assertion_type` are **orthogonal axes**, not variants of the same thing. One controls *what you're exchanging*, the other controls *how the client proves its own identity*. They can be combined freely.The mental model that unlocks all of this:
 
-<img width="1472" height="2872" alt="image" src="https://github.com/user-attachments/assets/c21df3ed-12c0-4d17-9b38-36b222d04d29" />
+<img width="1472" height="2872" alt="image" src="https://github.com/user-attachments/assets/4da3bea1-cf92-4a0a-8dd2-d44a5f369da9" />
 
 
 **`grant_type`** answers "what credential are you trading in?" — it's the exchange mechanism. **`client_assertion_type`** answers "but first, prove to me you're the client you claim to be" — it's the door pass before any exchange happens. Because they're orthogonal, `client_assertion_type=jwt-bearer` can appear alongside any `grant_type`.
