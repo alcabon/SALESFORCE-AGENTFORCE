@@ -19,7 +19,7 @@ The "two JWTs" row is the most powerful combination — `grant_type=jwt-bearer` 
 
 Exactly right. The asymmetry is intentional — when Salesforce is the **authorization server** (call-in), it owns both sides of the contract and can hide the complexity. When it's the **client** (call-out), it has to speak whatever dialect the external IdP demands, hence all those External Credential fields.The core reason for the simplicity gap: on the call-in side, Salesforce controls the entire authorization server stack — the token endpoint URL is always `https://login.salesforce.com/services/oauth2/token`, the JWT validation algorithm is fixed (RS256), the claim requirements are published in the docs. The external caller simply follows Salesforce's spec.
 
-<img width="1472" height="2216" alt="image" src="https://github.com/user-attachments/assets/1fbb9d39-3950-40cc-a68a-2b70b301694f" />
+<img width="1472" height="2216" alt="image" src="https://github.com/user-attachments/assets/27916205-89b3-4439-ba4d-2123f69838ff" />
 
 On the call-out side, every external IdP is different — Azure AD needs a `resource` param, Okta has its own `aud` format, some servers expect the `client_id` in the POST body and some in the header. Salesforce's External Credential fields exist to absorb all that variation.
 
